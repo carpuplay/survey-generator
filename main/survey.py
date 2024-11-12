@@ -15,6 +15,11 @@ def draw_boxes(c, x, y, label, box_count=20, box_size=12, spacing=15):
         c.rect(x_position, y - box_size + 2, box_size, box_size)  # Dessiner une case
         x_position += spacing  # Espace entre les cases
 
+def draw_target(c, position, size=2):
+    """Dessine un points aux positions spécifiées"""
+    
+    
+
 def draw_targets(c, positions, size=2):
     """Dessine des cibles (petits cercles) aux positions spécifiées."""
     for (x, y) in positions:
@@ -92,11 +97,34 @@ def generate_detachable_survey_with_qr(filename, questions):
     c.save()
     print(f"Questionnaire saved as {filename} with ID {unique_id}")
 
-# Exemple de questions pour l'enquête
-questions = [
-    "Quelle est votre tranche d'âge ?",
-    "Combien de temps passez-vous sur le campus par semaine ?",
-    "Quels sont les services que vous utilisez le plus fréquemment ?",
-]
 
-generate_detachable_survey_with_qr("enquete_detachable.pdf", questions)
+
+def uniqueIdGenerator():
+    return str(uuid.uuid1())
+
+def header(c, uniqueId, qrCodeImage):
+    '''Contenu : Nom, Prenom, Date de naissance, Sexe, identifiant numerique, qr code, cibles'''
+
+
+    return 0
+
+def survey(c, uniqueId, qrCodeImage):
+    '''Contenu : Identifiant numerique, qr code, cibles, questionaire'''
+
+    return 0
+
+def generateFile(fileName):
+
+    c = canvas.Canvas(fileName, pagesize=A4)
+    uniqueId = uniqueIdGenerator()
+
+    qrCodeImage = generate_qr_code(uniqueId)
+    qrCodeImage.save("qr_code.png")
+
+    header(c, uniqueId)
+    survey(c, uniqueId)
+
+    c.save()
+    print(f"Questionnaire saved as {fileName} with ID {uniqueId}")
+
+
