@@ -13,12 +13,7 @@ def draw_boxes(c, x, y, label, box_count=20, box_size=12, spacing=15):
     x_position = x + 100  # Position initiale des cases
     for _ in range(box_count):
         c.rect(x_position, y - box_size + 2, box_size, box_size)  # Dessiner une case
-        x_position += spacing  # Espace entre les cases
-
-def draw_target(c, position, size=2):
-    """Dessine un points aux positions spécifiées"""
-    
-    
+        x_position += spacing  # Espace entre les cases  
 
 def draw_targets(c, positions, size=2):
     """Dessine des cibles (petits cercles) aux positions spécifiées."""
@@ -121,8 +116,8 @@ def generateFile(fileName):
     qrCodeImage = generate_qr_code(uniqueId)
     qrCodeImage.save("qr_code.png")
 
-    header(c, uniqueId)
-    survey(c, uniqueId)
+    header(c, uniqueId, qrCodeImage)
+    survey(c, uniqueId, qrCodeImage)
 
     c.save()
     print(f"Questionnaire saved as {fileName} with ID {uniqueId}")
