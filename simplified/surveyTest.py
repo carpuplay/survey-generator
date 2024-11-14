@@ -4,6 +4,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 from PIL import Image
+import os
 
 def draw_boxes(c, x, y, label, box_count, box_size, spacing):
     """Dessine une ligne de cases pour chaque lettre."""
@@ -24,7 +25,7 @@ def draw_targets(c, positions, size=5):
     for (x, y) in positions:
         c.rect(x, y, size, size, fill=1)
 
-def draw_grid(c, top_left, bottom_right, x_spacing=1.5*cm, y_spacing=1.5*cm):
+def draw_grid(c, top_left, bottom_right, x_spacing=1*cm, y_spacing=1*cm):
     """Dessine une grille alignée avec les cibles."""
     x_start, y_start = top_left
     x_end, y_end = bottom_right
@@ -41,19 +42,19 @@ def draw_grid(c, top_left, bottom_right, x_spacing=1.5*cm, y_spacing=1.5*cm):
         c.line(x_start, y, x_end, y)
         y -= y_spacing
 
-def generate_qr_code(data):
+def generate_qr_code(data, fileName):
     """Génère un QR code pour les données et enregistre l'image dans un fichier."""
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=2)
     qr.add_data(data)
     qr.make(fit=True)
     img = qr.make_image(fill="black", back_color="white")
-    img.save("qrcode.png")
-    return "qrcode.png"  # Retourner le chemin du fichier
+    img.save(fileName)
+    return fileName  # Retourner le chemin du fichier
 
-def uniqueIdGenerator():
-    return str(uuid.uuid4())
+def enqueteIDGenerator():
+    return str(uuid.uuid4())[:4]
 
-def header(c, uniqueId, qrCodeImage, title):
+def header(c, enqueteID, qrCodeImage, title):
     '''Contenu : Nom, Prenom, Date de naissance, Sexe, identifiant numerique, qr code, cibles'''
 
     # Positions des cibles en haut
@@ -75,7 +76,7 @@ def header(c, uniqueId, qrCodeImage, title):
     c.drawImage(qrCodeImage, A4[0] - qr_code_size - 1 * cm, A4[1] - qr_code_size - 1 * cm, width=qr_code_size, height=qr_code_size)
     
     c.setFont("Helvetica", 8)
-    c.drawString(1 * cm, A4[1] - A4[1] / 4 + 0.5 * cm, f" {uniqueId}")
+    c.drawString(1 * cm, A4[1] - A4[1] / 4 + 0.5 * cm, f" {enqueteID}")
     c.drawString(10 * cm, A4[1] - A4[1] / 4 + 0.5 * cm, "(Veuillez détacher cette partie)")
 
     # Ligne de découpe
@@ -87,19 +88,62 @@ def header(c, uniqueId, qrCodeImage, title):
     c.setFont("Helvetica-Bold", 16)
     c.drawCentredString(A4[0] / 2, A4[1] - 1 * cm, title)
 
-    # Champs Nom et Prénom
-    c.setFont("Helvetica", 12)
-    c.drawString(1 * cm, A4[1] - 2.5 * cm, "Nom:")
-    draw_boxes(c, 3 * cm, A4[1] - 2.5 * cm, "", box_count=12, box_size=25, spacing=22)
+    # Champs Nom et Prénom dans la grille
+    c.setFont("Helvetica", 8)
+    c.drawString(3.25 * cm, A4[1] - 2.25 * cm, "(Écrivez uniquement dans les cases)")
 
-    c.drawString(1 * cm, A4[1] - 4 * cm, "Prénom:")
-    draw_boxes(c, 3 * cm, A4[1] - 4 * cm, "", box_count=12, box_size=25, spacing=22)
+    c.setFont("Helvetica", 12)
+    c.drawString(1 * cm, A4[1] - 3.5 * cm, "Nom:")
+    draw_boxes(c, 3 * cm, A4[1] - 3.5 * cm, "", box_count=12, box_size=1 * cm, spacing=0.75 * cm)
+
+    c.drawString(1 * cm, A4[1] - 4.75 * cm, "Prénom:")
+    draw_boxes(c, 3 * cm, A4[1] - 4.75 * cm, "", box_count=12, box_size=1 * cm, spacing=0.75 * cm)
+
+    # Champ Sexe
+    c.drawString(1 * cm, A4[1] - 5.5 * cm, "Sexe:")
+    c.drawString(2.5 * cm, A4[1] - 5.5 * cm, "H")
+    c.rect(3 * cm, A4[1] - 5.5 * cm, 0.5 * cm, 0.5 * cm)  # Case H
+    c.drawString(4 * cm, A4[1] - 5.5 * cm, "F")
+    c.rect(4.5 * cm, A4[1] - 5.5 * cm, 0.5 * cm, 0.5 * cm)  # Case F
+    c.drawString(5.25 * cm, A4[1] - 5.5 * cm, "Autre:")
+    c.rect(6.5 * cm, A4[1] - 5.5 * cm, 0.5 * cm, 0.5 * cm)  # Case Autre
+
+    # Champ Date de naissance
+    c.setFont("Helvetica", 8)
+    c.drawString(13 * cm, A4[1] - 4.25 * cm, "( JJ / MM / AAAA )")
+
+    c.setFont("Helvetica", 12)
+    c.drawString(9 * cm, A4[1] - 5.5 * cm, "Date de naissance:")
+    draw_boxes(c, 13 * cm, A4[1] - 5.5 * cm, "", box_count=8, box_size=1 * cm, spacing=0.75 * cm)
+
+
 
     return
 
-def survey(c, uniqueId, qrCodeImagePath):
-    '''Contenu : Identifiant numerique, qr code, cibles, questionaire'''
+def versoHeader(c, enqueteID):
+    '''Ne pas remplir'''
+    # Texte "Ne pas remplir cette partie"
+    c.setFont("Helvetica-Bold", 12)
+    c.drawCentredString(A4[0] / 2, A4[1] - 1 * cm, "Ne pas remplir cette partie")
+    c.drawCentredString(A4[0] / 2, A4[1] - 6 * cm, "Ne pas remplir cette partie")
 
+    # Lignes diagonales
+    c.setLineWidth(1)
+    c.line(1 * cm, A4[1] - 1 * cm, A4[0] - 1 * cm, A4[1] - A4[1] / 4 + 1 * cm)
+    c.line(1 * cm, A4[1] - A4[1] / 4 + 1 * cm, A4[0] - 1 * cm, A4[1] - 1 * cm)
+
+    c.setDash(1, 2)  # Ligne pointillée
+    c.line(0.5 * cm, A4[1] - A4[1] / 4, A4[0] - 0.5 * cm, A4[1] - A4[1] / 4)
+    c.setDash()
+
+    c.setFont("Helvetica", 8)
+    c.drawString(1 * cm, A4[1] - A4[1] / 4 + 0.5 * cm, f" {enqueteID}")
+
+    return
+
+def survey(c, enqueteID, qrCodeImagePath, fileId):
+    '''Contenu : Identifiant numerique, qr code, cibles, questionaire'''
+    print(f"\033[93m{fileId}\033[0m")
     positions = [
         (1 * cm, A4[1] - A4[1] / 4 - 1 * cm),  # Top-left of the survey area
         (A4[0] - 1 * cm, A4[1] - A4[1] / 4 - 1 * cm),  # Skip top-right for QR code
@@ -115,24 +159,42 @@ def survey(c, uniqueId, qrCodeImagePath):
     draw_grid(c, top_left, bottom_right)
 
     # QR code en haut à droite
-    qr_code_size = 2 * cm  
+    qr_code_size = 1 * cm  
     top_right_position = (A4[0] - 1 * cm, A4[1] - A4[1] / 4 - 1 * cm)
     c.drawImage(qrCodeImagePath, top_right_position[0] - qr_code_size, top_right_position[1] - qr_code_size, width=qr_code_size, height=qr_code_size)
 
+    # QR code gauche
+    fileIdQrCodeImagePath = generate_qr_code(fileId, f"fileId_{fileId}.png")
+    c.drawImage(fileIdQrCodeImagePath, top_right_position[0] - 1.5 * qr_code_size - 0.5 * cm, top_right_position[1] - qr_code_size, width=qr_code_size, height=qr_code_size)
+
+    if os.path.exists(fileIdQrCodeImagePath):
+        os.remove(fileIdQrCodeImagePath)
+        print(fileIdQrCodeImagePath, "remooved")
+
     c.setFont("Helvetica", 8)
-    c.drawString(1 * cm, 0.5 * cm, f"{uniqueId}")
+    c.drawString(1 * cm, 0.5 * cm, f"{enqueteID}")
 
     return
 
-def generateFile(fileName, title):
+def generateFile(fileName, title, enqueteID):
     c = canvas.Canvas(fileName, pagesize=A4)
-    uniqueId = uniqueIdGenerator()
-    qrCodeImagePath = generate_qr_code(uniqueId)
+
     
-    header(c, uniqueId, qrCodeImagePath, title)
-    survey(c, uniqueId, qrCodeImagePath)
+    qrCodeImagePath = generate_qr_code(enqueteID, "enqueteId.png")
+
+    fileId = enqueteIDGenerator()
+    
+    header(c, enqueteID, qrCodeImagePath, title)
+    survey(c, enqueteID, qrCodeImagePath, fileId + str(c.getPageNumber()))
+    
+    c.showPage()  # Commence une nouvelle page
+    versoHeader(c, enqueteID)
+    survey(c, enqueteID, qrCodeImagePath, fileId + str(c.getPageNumber()))
 
     c.save()
-    print(f"\033[92mQuestionnaire saved as {fileName} with ID {uniqueId}\033[0m")
+    print(f"\033[92mQuestionnaire saved as {fileName} with ID {enqueteID}\033[0m")
+    print(f"\033[92mThe file has {c.getPageNumber()-1} pages\033[0m")
 
-generateFile("mamadou.pdf", "Enquête sur l'Amélioration des Services")
+
+for i in range(10):
+    generateFile("mamadou" + str(i) + ".pdf", "Enquête sur l'Amélioration des Services", "dc9c")
